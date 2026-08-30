@@ -3,6 +3,12 @@
 All work enters through a branch and pull request. Do not push implementation or
 data directly to the protected default branch.
 
+The `main` branch is platform-protected: pull requests and conversation resolution
+are required, force pushes and branch deletion are disabled, and the rule applies
+to administrators. Required approving reviews remain at zero so a single-account
+repository is not self-locked; independent architecture and release gates remain
+process requirements.
+
 ## Required handoff
 
 Every pull request must state:
