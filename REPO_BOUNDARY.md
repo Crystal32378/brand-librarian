@@ -64,8 +64,14 @@ Every non-demo metadata claim must carry an explicit basis such as:
 - `visual_observation`
 - `filename_or_path_inference`
 - `approved_document`
+- `human_confirmation`
 - `unknown`
 - `needs_review`
+
+`human_confirmation` must identify the scope and authorized role of the confirmer.
+It confirms only the stated field; it does not establish ownership, publication
+rights, legal clearance, product identity, or another field unless the confirmer
+has that authority and the evidence record says so explicitly.
 
 Inference must not be promoted to confirmed fact. Similarity must not establish
 identity, rights, product variant, or fitness for use. Missing evidence must fail
