@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Brand Librarian — Reference Prototype v2</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <style>
+  /* ============================================================
+     Reference Prototype v2 — public release of the Brand Librarian
+     interaction model.
+
+     No private data. No real archive references. No real
+     inventory entries. All metadata is synthetic and labelled as
+     such in the UI.
+
+     This file's purpose is to demonstrate the frontstage
+     architecture: 6-folder grid, hover image reveal, click
+     detail drawer, keyboard contract, modal semantics, and the
+     synthetic-metadata labelling rule. The look and feel
+     approximate a fashion-archive reference; the data
+     underneath is wholly invented for layout purposes.
+     ============================================================ */
+
+  :root {
+    --bg: #ebe7df;
+    --paper-1: #f4f1eb;
+    --paper-2: #ece8e0;
+    --ink-1: #1a1814;
+    --ink-2: #4a463d;
+    --ink-3: #8a8472;
+    --ink-red: #8a2418;
+    --type-serif: "Cormorant Garamond", "Times New Roman", serif;
+    --type-sans: "Inter", system-ui, sans-serif;
+    --type-mono: "JetBrains Mono", Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink-1);
+    font-family: var(--type-sans);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .archive-head {
+    padding: 36px 56px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--ink-3);
+  }
+  .brand-mark {
+    font-family: var(--type-serif);
+    font-size: 38px;
+    font-weight: 400;
+    letter-spacing: 0.32em;
+    color: var(--ink-1);
+  }
+  .brand-mark .sub {
+    display: block;
+    font-size: 9px;
+    letter-spacing: 0.42em;
+    color: var(--ink-3);
+    margin-top: 4px;
+    font-style: normal;
+  }
+  .archive-head .stamp {
+    font-family: var(--type-mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    text-align: right;
+    line-height: 1.5;
+  }
+
+  .shelf-meta {
+    padding: 14px 56px;
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--type-mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .shelf-meta .right span { margin-left: 18px; }
+
+  /* ============================================================
+     SHELF — 6 folder grid
+     ============================================================ */
+  .shelf {
+    padding: 32px 56px 80px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 56px 40px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .folder {
+    position: relative;
+    aspect-ratio: 3 / 4;
+    cursor: pointer;
+    outline: none;
+  }
+  .folder:focus-visible { outline: 2px solid var(--ink-1); outline-offset: 4px; }
+
+  .folder__sheet {
+    position: absolute;
+    inset: 0;
+    background: var(--paper-1);
+    box-shadow: 0 1px 0 var(--paper-2), 0 14px 30px -18px rgba(0,0,0,0.18);
+    overflow: hidden;
+    transition: box-shadow 700ms ease;
+  }
+  .folder__photo {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    transition: opacity 900ms ease;
+  }
+  .folder__caption {
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--type-mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-1);
+    opacity: 0;
+    transition: opacity 700ms ease 200ms;
+  }
+  .folder__caption .name { font-family: var(--type-serif); font-size: 14px; letter-spacing: 0.04em; text-transform: none; }
+
+  .folder__cover {
+    position: absolute;
+    inset: 0;
+    background: var(--paper-2);
+    transform-origin: top left;
+    transition: transform 700ms ease, opacity 700ms ease;
+  }
+  .folder__spine {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: rgba(0,0,0,0.06);
+  }
+  .folder__face {
+    position: absolute;
+    inset: 0;
+    padding: 28px 28px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .folder__face .row.top {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--type-mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .folder__face .title {
+    font-family: var(--type-serif);
+    font-size: 26px;
+    font-weight: 400;
+    line-height: 1.15;
+    margin: 8px 0 0;
+    color: var(--ink-1);
+  }
+  .folder__face .stamp-mark {
+    position: absolute;
+    top: 28px;
+    right: 28px;
+    width: 64px;
+    height: 64px;
+    border: 1.5px solid var(--ink-red);
+    border-radius: 50%;
+    color: var(--ink-red);
+    font-family: var(--type-mono);
+    font-size: 8px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1.2;
+    transform: rotate(-8deg);
+    opacity: 0.78;
+  }
+  .folder__face .stamp-mark .demo {
+    display: inline-block;
+    font-size: 7.5px;
+    letter-spacing: 0.12em;
+  }
+  .folder__face .meta {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--type-mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+  .folder__face .meta .id { letter-spacing: 0.22em; }
+
+  .folder__tab {
+    position: absolute;
+    top: -10px;
+    left: 24px;
+    background: var(--paper-2);
+    border: 1px solid var(--paper-2);
+    border-bottom: none;
+    padding: 6px 14px 4px;
+    font-family: var(--type-mono);
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    transform: skewX(-12deg);
+  }
+  .folder__tab .code {
+    display: inline-block;
+    transform: skewX(12deg);
+  }
+
+  /* HOVER / FOCUS */
+  .folder:hover .folder__cover,
+  .folder:focus-visible .folder__cover {
+    transform: translateY(-3px);
+    opacity: 0.06;
+  }
+  .folder:hover .folder__sheet,
+  .folder:focus-visible .folder__sheet {
+    box-shadow: 0 1px 0 var(--paper-2), 0 28px 60px -24px rgba(0,0,0,0.32);
+  }
+  .folder:hover .folder__photo,
+  .folder:focus-visible .folder__photo {
+    opacity: 1;
+  }
+  .folder:hover .folder__caption,
+  .folder:focus-visible .folder__caption {
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .folder__cover, .folder__sheet, .folder__photo, .folder__caption { transition: none; }
+    .folder:hover .folder__cover, .folder:focus-visible .folder__cover { transform: none; opacity: 0.2; }
+  }
+
+  @media (max-width: 900px) {
+    .shelf { grid-template-columns: repeat(2, 1fr); padding: 32px 24px 64px; gap: 40px 24px; }
+    .archive-head { padding: 24px 24px 18px; }
+    .shelf-meta { padding: 12px 24px; }
+  }
+  @media (max-width: 560px) {
+    .shelf { grid-template-columns: 1fr; }
+  }
+
+  /* ============================================================
+     DRAWER — case file
+     ============================================================ */
+  .drawer {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 50;
+  }
+  .drawer__scrim {
+    position: absolute;
+    inset: 0;
+    background: rgba(20, 18, 14, 0.32);
+    opacity: 0;
+    transition: opacity 500ms ease;
+    pointer-events: none;
+  }
+  .drawer.is-open .drawer__scrim { opacity: 1; pointer-events: auto; }
+  .drawer__panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: min(720px, 92vw);
+    background: var(--paper-1);
+    transform: translateX(100%);
+    transition: transform 700ms cubic-bezier(0.22, 0.61, 0.36, 1);
+    overflow-y: auto;
+    box-shadow: -24px 0 60px -24px rgba(0,0,0,0.28);
+  }
+  .drawer.is-open .drawer__panel {
+    transform: translateX(0);
+  }
+  .drawer__close {
+    position: absolute;
+    top: 22px;
+    right: 24px;
+    background: transparent;
+    border: none;
+    font-family: var(--type-mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    cursor: pointer;
+    padding: 6px 8px;
+    z-index: 2;
+  }
+  .drawer__close:hover { color: var(--ink-1); }
+  .drawer__body { padding: 56px 48px 80px; }
+  .drawer__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--paper-2);
+    padding-bottom: 18px;
+    margin-bottom: 28px;
+  }
+  .drawer__head .file-id {
+    font-family: var(--type-mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .drawer__title {
+    font-family: var(--type-serif);
+    font-size: 36px;
+    font-weight: 400;
+    line-height: 1.1;
+    margin: 6px 0 4px;
+  }
+  .drawer__year {
+    font-family: var(--type-mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+  .drawer__hero {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background-size: cover;
+    background-position: center;
+    background-color: var(--paper-2);
+    margin-bottom: 28px;
+  }
+  .drawer__grid {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 28px 32px;
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .drawer__grid dt {
+    font-family: var(--type-mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0;
+  }
+  .drawer__grid dd {
+    margin: 0 0 6px;
+    color: var(--ink-1);
+    font-family: var(--type-serif);
+    font-size: 15px;
+    line-height: 1.45;
+  }
+  .synthetic-tag {
+    font-family: var(--type-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.06em;
+    color: var(--ink-3);
+    text-transform: lowercase;
+    font-weight: 400;
+    margin-left: 4px;
+  }
+  .drawer__observation {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--paper-2);
+    padding-top: 20px;
+    margin-top: 8px;
+  }
+  .drawer__observation p {
+    font-family: var(--type-serif);
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--ink-1);
+    margin: 8px 0 0;
+  }
+
+  @media (max-width: 560px) {
+    .drawer__body { padding: 48px 24px 64px; }
+  }
+  </style>
+</head>
+<body>
+
+  <header class="archive-head">
+    <div>
+      <div class="brand-mark">BL<span class="sub">BRAND&nbsp;LIBRARIAN&nbsp;·&nbsp;REFERENCE&nbsp;PROTOTYPE</span></div>
+    </div>
+    <div class="stamp">
+      Reference Implementation · Synthetic Data
+    </div>
+  </header>
+
+  <div class="shelf-meta">
+    <div>6 demo entries · 1 of 1 (synthetic)</div>
+    <div class="right">
+      <span>Reference build · not a system of record</span>
+    </div>
+  </div>
+
+  <main class="shelf" id="shelf"></main>
+
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer__scrim" id="drawerScrim"></div>
+    <div class="drawer__panel" id="drawerPanel" role="dialog" aria-modal="false" aria-labelledby="drawerTitle">
+      <button class="drawer__close" id="drawerClose" aria-label="Close case file" inert tabindex="-1">Close ×</button>
+      <div class="drawer__body">
+        <div class="drawer__head">
+          <div>
+            <div class="file-id" id="drawerId">— · —</div>
+            <h2 class="drawer__title" id="drawerTitle">—</h2>
+            <div class="drawer__year" id="drawerYear">—</div>
+          </div>
+          <div class="file-id" id="drawerState" style="text-align:right;">STATE</div>
+        </div>
+        <div class="drawer__hero" id="drawerHero"></div>
+        <dl class="drawer__grid">
+          <div>
+            <dt>Collection</dt><dd id="dCollection">—</dd>
+          </div>
+          <div>
+            <dt>Series</dt><dd id="dSeries">—</dd>
+          </div>
+          <div>
+            <dt>Frame No.</dt><dd id="dFormat">—</dd>
+          </div>
+          <div>
+            <dt>Visual Note <span class="synthetic-tag">(synthetic)</span></dt><dd id="dProvenance">—</dd>
+          </div>
+          <div>
+            <dt>Asset ID <span class="synthetic-tag">(synthetic)</span></dt><dd id="dAssetId">—</dd>
+          </div>
+          <div>
+            <dt>Source Reference</dt><dd id="dSourceRef">—</dd>
+          </div>
+          <div class="drawer__observation">
+            <dt>Observation <span class="synthetic-tag">(synthetic, AI-written)</span></dt>
+            <p id="dObservation">—</p>
+          </div>
+        </dl>
+      </div>
+    </div>
+  </aside>
+
+<script>
+  // ============================================================
+  // 6 generic reference entries.
+  //   id, visualNote, observation, title = synthetic
+  //   collection, series, year, sourceRef (relative only),
+  //   tab, img = synthetic, illustrative only
+  //
+  // Reference Prototype. Not a system of record.
+  // No real inventory. No real archive. No real assets.
+  // ============================================================
+  const ENTRIES = [
+    {
+      id: "BL-2018-A-001",
+      tab: "T-001",
+      collection: "Collection Alpha",
+      collectionEn: "Reference group Alpha",
+      series: "Reference series · 2018",
+      year: "2018",
+      title: "Reference frame 1",
+      visualNote: "Generic ambient scene placeholder. Synthesised for layout only.",
+      sourceRef: "<source-archive>/2018/alpha/T-001",
+      observation: "Generic layout demo. No real observation. Replace with synthetic fixture or real authorised asset before any consumer integration.",
+      img: "assets/display/placeholder_01.svg"
+    },
+    {
+      id: "BL-2018-B-002",
+      tab: "T-002",
+      collection: "Collection Bravo",
+      collectionEn: "Reference group Bravo",
+      series: "Reference series · 2018",
+      year: "2018",
+      title: "Reference frame 2",
+      visualNote: "Generic ambient scene placeholder. Synthesised for layout only.",
+      sourceRef: "<source-archive>/2018/bravo/T-002",
+      observation: "Generic layout demo. No real observation. Replace with synthetic fixture or real authorised asset before any consumer integration.",
+      img: "assets/display/placeholder_02.svg"
+    },
+    {
+      id: "BL-2018-C-003",
+      tab: "T-003",
+      collection: "Collection Charlie",
+      collectionEn: "Reference group Charlie",
+      series: "Reference series · 2018",
+      year: "2018",
+      title: "Reference frame 3",
+      visualNote: "Generic ambient scene placeholder. Synthesised for layout only.",
+      sourceRef: "<source-archive>/2018/charlie/T-003",
+      observation: "Generic layout demo. No real observation. Replace with synthetic fixture or real authorised asset before any consumer integration.",
+      img: "assets/display/placeholder_03.svg"
+    },
+    {
+      id: "BL-2018-D-004",
+      tab: "T-004",
+      collection: "Collection Delta",
+      collectionEn: "Reference group Delta",
+      series: "Reference series · 2018",
+      year: "2018",
+      title: "Reference frame 4",
+      visualNote: "Generic ambient scene placeholder. Synthesised for layout only.",
+      sourceRef: "<source-archive>/2018/delta/T-004",
+      observation: "Generic layout demo. No real observation. Replace with synthetic fixture or real authorised asset before any consumer integration.",
+      img: "assets/display/placeholder_04.svg"
+    },
+    {
+      id: "BL-2021-E-005",
+      tab: "T-005",
+      collection: "Collection Echo",
+      collectionEn: "Reference group Echo",
+      series: "Reference series · 2021",
+      year: "2021",
+      title: "Reference frame 5",
+      visualNote: "Generic ambient scene placeholder. Synthesised for layout only.",
+      sourceRef: "<source-archive>/2021/echo/T-005",
+      observation: "Generic layout demo. No real observation. Replace with synthetic fixture or real authorised asset before any consumer integration.",
+      img: "assets/display/placeholder_05.svg"
+    },
+    {
+      id: "BL-2021-F-006",
+      tab: "T-006",
+      collection: "Collection Foxtrot",
+      collectionEn: "Reference group Foxtrot",
+      series: "Reference series · 2021",
+      year: "2021",
+      title: "Reference frame 6",
+      visualNote: "Generic ambient scene placeholder. Synthesised for layout only.",
+      sourceRef: "<source-archive>/2021/foxtrot/T-006",
+      observation: "Generic layout demo. No real observation. Replace with synthetic fixture or real authorised asset before any consumer integration.",
+      img: "assets/display/placeholder_06.svg"
+    },
+  ];
+
+  const shelf = document.getElementById("shelf");
+  const drawer = document.getElementById("drawer");
+  const drawerClose = document.getElementById("drawerClose");
+  const drawerPanel = document.getElementById("drawerPanel");
+  const drawerScrim = document.getElementById("drawerScrim");
+  const dEls = {
+    id: document.getElementById("drawerId"),
+    title: document.getElementById("drawerTitle"),
+    year: document.getElementById("drawerYear"),
+    state: document.getElementById("drawerState"),
+    hero: document.getElementById("drawerHero"),
+    collection: document.getElementById("dCollection"),
+    series: document.getElementById("dSeries"),
+    format: document.getElementById("dFormat"),
+    provenance: document.getElementById("dProvenance"),
+    assetId: document.getElementById("dAssetId"),
+    sourceRef: document.getElementById("dSourceRef"),
+    observation: document.getElementById("dObservation"),
+  };
+
+  function renderShelf() {
+    shelf.innerHTML = "";
+    ENTRIES.forEach((e, i) => {
+      const f = document.createElement("article");
+      f.className = "folder";
+      f.tabIndex = 0;
+      f.setAttribute("role", "button");
+      f.setAttribute("aria-label", `Open reference entry ${e.id} — ${e.collection}`);
+      f.dataset.index = i;
+
+      f.innerHTML = `
+        <div class="folder__sheet" aria-hidden="true">
+          <div class="folder__photo" style="background-image:url('${e.img}');"></div>
+          <div class="folder__caption">
+            <span class="name">${e.collection}</span>
+            <span>${e.id}</span>
+          </div>
+        </div>
+
+        <div class="folder__cover" aria-hidden="true">
+          <div class="folder__spine"></div>
+          <div class="folder__face">
+            <div class="row top">
+              <span>${e.collectionEn}</span>
+              <span>FOLDER</span>
+            </div>
+            <h3 class="title">${e.collection}</h3>
+            <div>
+              <div class="stamp-mark"><span class="demo">DEMO</span><br/><span class="demo">UNVERIFIED</span></div>
+              <div class="meta">
+                <span class="id">${e.id}</span>
+                <span class="yr">${e.year}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="folder__tab"><span class="code">${e.tab}</span></div>
+      `;
+
+      f.addEventListener("click", () => openDrawer(e, f));
+      f.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter" || ev.key === " ") {
+          ev.preventDefault();
+          openDrawer(e, f);
+        }
+      });
+      shelf.appendChild(f);
+    });
+  }
+
+  let lastFocused = null;
+
+  function openDrawer(e, folderEl) {
+    lastFocused = document.activeElement;
+    document.querySelectorAll(".folder.is-open").forEach(el => el.classList.remove("is-open"));
+    folderEl.classList.add("is-open");
+
+    dEls.id.textContent = `Reference Entry · ${e.id}`;
+    dEls.title.textContent = e.collection;
+    dEls.year.textContent = e.collectionEn + " · " + e.series + " · " + e.year;
+    dEls.state.textContent = "STATE · DEMO / UNVERIFIED";
+    dEls.hero.style.backgroundImage = `url('${e.img}')`;
+    dEls.collection.textContent = e.collection + "  /  " + e.collectionEn;
+    dEls.series.textContent = e.series;
+    dEls.format.textContent = e.sourceRef.split("/").pop();
+    dEls.provenance.textContent = e.visualNote;
+    dEls.assetId.textContent = e.id;
+    dEls.sourceRef.textContent = e.sourceRef;
+    dEls.observation.textContent = e.observation;
+
+    drawer.classList.add("is-open");
+    drawer.setAttribute("aria-hidden", "false");
+    drawerPanel.setAttribute("aria-modal", "true");
+    drawerClose.removeAttribute("inert");
+    drawerClose.setAttribute("tabindex", "0");
+    requestAnimationFrame(() => drawerClose.focus());
+  }
+
+  function closeDrawer() {
+    drawer.classList.remove("is-open");
+    drawer.setAttribute("aria-hidden", "true");
+    drawerPanel.setAttribute("aria-modal", "false");
+    drawerClose.setAttribute("inert", "");
+    drawerClose.setAttribute("tabindex", "-1");
+    document.querySelectorAll(".folder.is-open").forEach(el => el.classList.remove("is-open"));
+    if (lastFocused && typeof lastFocused.focus === "function") {
+      lastFocused.focus();
+    }
+  }
+
+  drawerClose.addEventListener("click", closeDrawer);
+  drawerScrim.addEventListener("click", closeDrawer);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeDrawer();
+  });
+
+  renderShelf();
+</script>
+</body>
+</html>
